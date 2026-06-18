@@ -2,6 +2,8 @@
 
 A clean, two-line [Claude Code](https://claude.com/claude-code) status line that shows your model, machine, directory, git branch, a color-coded context-window bar, token usage, and session elapsed time.
 
+![afxStatusLine screenshot](docs/screenshot.png)
+
 ```
 [Opus] 🖥️ nexus 📁 my-app | 🌿 main
 ████░░░░░░ 42% | 🪙 84k/200k | ⏱️ 7m 3s
