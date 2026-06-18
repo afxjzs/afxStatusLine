@@ -1,16 +1,16 @@
 # afxStatusLine
 
-A clean, two-line [Claude Code](https://claude.com/claude-code) status line that shows your model, machine, directory, git branch, a color-coded context-window bar, token usage, and session elapsed time.
+A clean, two-line [Claude Code](https://claude.com/claude-code) status line that shows your model, machine, directory, git branch, token usage, session elapsed time, a color-coded context-window bar, and — on Pro/Max plans — your 5-hour and 7-day subscription usage with reset countdowns.
 
 ![afxStatusLine screenshot](docs/screenshot.png)
 
 ```
-[Opus] 🖥️ nexus 📁 my-app | 🌿 main
-████░░░░░░ 42% | 🪙 84k/200k | ⏱️ 7m 3s
+[Opus 4.8 (1M context)] 🖥️ nexus 📁 my-app | 🌿 main | 🪙 84k/200k | ⏱️ 7m 3s
+████░░░░░░ 42% | ⚡ 5h 24% (↻ 2h13m) | 📅 7d 41% (↻ 4d6h)
 ```
 
-- **Line 1** — `[Model] 🖥️ host 📁 dir | 🌿 branch`
-- **Line 2** — `<context bar> NN% | 🪙 used/total tokens | ⏱️ elapsed`
+- **Line 1** — `[Model] 🖥️ host 📁 dir | 🌿 branch | 🪙 used/total tokens | ⏱️ elapsed`
+- **Line 2** — `<context bar> NN% | ⚡ 5h usage (↻ reset) | 📅 7d usage (↻ reset)`
 
 The context bar is color-coded by how full the context window is:
 
@@ -20,7 +20,8 @@ The context bar is color-coded by how full the context window is:
 | 70–89%  | yellow |
 | ≥ 90%   | red    |
 
-The 🌿 branch segment only appears when the current directory is inside a git repo.
+- The 🌿 branch segment only appears when the current directory is inside a git repo.
+- The ⚡ (5-hour) and 📅 (7-day) usage gauges only appear on **Pro/Max** plans, and only after the first API call of the session populates the rate-limit data. They use the same green/yellow/red thresholds, show a `⚠️` prefix at ≥ 90%, and each carries a `↻` countdown to when that window resets.
 
 ## Preview
 
@@ -110,20 +111,27 @@ Claude Code invokes the status-line command on each refresh and pipes a JSON blo
 | `.context_window.total_output_tokens`      | tokens in context         |
 | `.context_window.context_window_size`      | window size               |
 | `.cost.total_duration_ms`                  | elapsed time              |
+| `.rate_limits.five_hour.used_percentage`   | ⚡ 5h gauge (Pro/Max)      |
+| `.rate_limits.five_hour.resets_at`         | ⚡ 5h reset countdown      |
+| `.rate_limits.seven_day.used_percentage`   | 📅 7d gauge (Pro/Max)      |
+| `.rate_limits.seven_day.resets_at`         | 📅 7d reset countdown      |
+
+The `rate_limits` block is absent until the first API response of a session, and absent entirely on plans without subscription rate limits — the script omits the usage gauges in that case rather than printing placeholders.
 
 ## Test it
 
-You can exercise the script without Claude Code by piping it mock input:
+You can exercise the script without Claude Code by piping it mock input.
+
+With subscription usage data (Pro/Max — both gauges shown):
+
+```bash
+echo '{"model":{"display_name":"Opus 4.8 (1M context)"},"workspace":{"current_dir":"/home/user/my-app"},"context_window":{"used_percentage":42,"total_input_tokens":83000,"total_output_tokens":1000,"context_window_size":200000},"cost":{"total_duration_ms":423000},"rate_limits":{"five_hour":{"used_percentage":23.5,"resets_at":9999999999},"seven_day":{"used_percentage":41.2,"resets_at":9999999999}}}' | ./statusline.sh
+```
+
+Without `rate_limits` (gauges hidden):
 
 ```bash
 echo '{"model":{"display_name":"Opus"},"workspace":{"current_dir":"/home/user/my-app"},"context_window":{"used_percentage":42,"total_input_tokens":83000,"total_output_tokens":1000,"context_window_size":200000},"cost":{"total_duration_ms":423000}}' | ./statusline.sh
-```
-
-Expected:
-
-```
-[Opus] 🖥️ nexus 📁 my-app
-████░░░░░░ 42% | 🪙 84k/200k | ⏱️ 7m 3s
 ```
 
 ## Build prompt
